@@ -1,0 +1,5 @@
+package randomPR;
+
+public enum PRCounter {
+	GLOBAL_RESIDUAL_COUNTER, LOCAL_ITERATION_NUM_COUNTER, BLOCK_COUNTER;
+}
