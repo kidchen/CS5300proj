@@ -272,3 +272,4 @@ s3n://bucket-name/folder-name/pass0, s3n://bucket-name/folder-name/pass1,
 As a result, for the output argument, please end the argument with the folder-name only,
 without any other special characters like ‘/’. Otherwise, it will fail to create the output folder.
 Step 5: Create the cluster and run the program. You should see appropriate information in stdout and log files.
+
