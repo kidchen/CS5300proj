@@ -1,8 +1,10 @@
 CS5300proj
 ==========
-##### ￼￼￼￼Cornell University
-###### ￼￼￼￼￼￼￼CS5300 - SP14
-### ￼￼￼Fast Convergence PageRank in Hadoop Report
+***For the best format of the report, please see raw of [THIS](https://github.com/kidchen/CS5300proj/blob/master/README.pdf)!***
+
+#####￼Cornell University
+###### CS5300 - SP14
+### Fast Convergence PageRank in Hadoop Report
 ##### Yun Hao (yh539), Yang Yang (yy565), Chen Zhang (cz294)
 
 #### 0. Overall Structures
@@ -14,26 +16,31 @@ CS5300proj
 
 #### 1. Input Data Preprocess
 ##### 1.1 Filter Parameter:
-- Reject edges are based on netID: cz294 /- rejectMin: 0.99 /* 0.492 (0.48708)
-- rejectLimit: 0.99 /* 0.492 /+ 0.01 (0.49708)
-##### ￼1.2 Data Format: SimpleNode:
+- Reject edges are based on netID: cz294 - rejectMin: 0.99 * 0.492 (0.48708)
+- rejectLimit: 0.99 * 0.492 + 0.01 (0.49708)
+
+##### 1.2 Data Format: SimpleNode:
 BlockNode:
 > src_node /t pagerank /t LIST(des_node)
-> src_node+src_block /t pagerank /t LIST(des_node+des_block)
-/* Note that the pagerank we put here is 1.0, is amplified by N(total # of nodes) so in the reducer, we calculate the new pagerank value by (1 /- d) /+ d /* incoming/_PR/_sum, also amplified by N(total # of nodes).
 
+> src_node+src_block /t pagerank /t LIST(des_node+des_block)
+
+* Note that the pagerank we put here is 1.0, is amplified by N(total # of nodes) so in the reducer, we calculate the new pagerank value by (1 - d) + d * incoming_PR_sum, also amplified by N(total # of nodes).
 
 #### 2. Simple Computation of PageRank
-2.1 MapReduce Task
+##### 2.1 MapReduce Task
 Mapper get information from master node, separate sub-divided problems and pass them to each branch node.
+
 Reducer collect the information from each branch node and updates the PR value for the node based on the PR values of its neighbor nodes, and finally pass the updated information back to the master node.
-2.2 Data Format
+
+##### 2.2 Data Format
 Mapper Input/ Reducer Output Format:
 <srcNodeID /t PR /t dstNodeIDLIST> Mapper Output/ Reducer Input Format:
 <srcNodeID: list: dstNodeIDLIST> <srcNodeID: pr: PR>
 if outdegree > 0:
 Use Hadoop counter to calculate the residual error of each pass.
-2.3 Map
+
+##### 2.3 Map
 Mapper basically does the pass tasks. Load information from the last MapReduce pass. (*The first pass will load from the preprocessed file)
 <srcNodeID /t PR /t dstNodeIDLIST> There are three kinds of information we need to pass:
 1. <srcNodeID: list:dstNodeIDLIST>
@@ -41,7 +48,8 @@ Mapper basically does the pass tasks. Load information from the last MapReduce p
 *Use those two remember the old pagerank value and list of dstNodes.
 3. <dstNodeID: PR(srcNode)/degree(srcNode)> (if not a sink)
 *Use this infomation to caculate the new pagerank value for each node in the reducer.
-2.4 Reduce
+
+##### 2.4 Reduce
 Collect information from the branch node and reduce then do the computation based on information mapper passed.
 There are three kinds of information we received:
 1. <srcNodeID: pr:PR> --store to oldPageRank
@@ -51,18 +59,20 @@ pageRankSum += prevPageRank / srcDegree
 <dstNodeID: PR(srcNode)/degree(srcNode)>
 newPageRank = d * pageRankSum + (1 - d) Here d is the damping factor (d=0.85).
 (*Not divided by N because the pagerank value of preprocess file is not divided by N, so the value here is actually amplified)
-2.5 Calculate the Residual
+
+##### 2.5 Calculate the Residual
 At the same time, reducer will calculate the residual error of this node and add it to counter (Hadoop counter).
 ResidualError = (newPageRank-oldPageRank)/newPageRank
 *We need to amplify this by 10^6 to convert to long before we add it to counter. PageRank Value gets updated every time a collection of key-value pair passes the reducer, and a new residual error will be calculated for this node. After all pairs are done, we can calculate the average residual error of this Pass:
 Avg Residual Error= Sum of Residual Error/ total # of Nodes. After computation, output the updated information to master node using the newPageValue it calculated and the dstNodeIDList mapper passes:
-2.6 Result
+
+##### 2.6 Result
 <srcNodeID /t PR /t dstNodeIDLIST>
 Average Residual Value: 2.3388981179020183 Average Residual Value: 0.3229210087269968 Average Residual Value: 0.19205631760138933 Average Residual Value: 0.094025042292369 Average Residual Value: 0.06280159072136364
 It demonstrates the slow convergence. We found it actually converging but the residual error is still too far from 0.001 after 5 MapReduce Passes.
 
 #### 3. Blocked Computation of PageRank
-3.1 Data Format
+##### 3.1 Data Format
 Mapper Input/ Reducer Output Format:
 < u_ndoeID+u_blockID /t u_PR /t LIST(v_nodeID+v_blockID) >
 (*u is the srcNode and v is the dstNode: u->v) Mapper Output/ Reducer Input Format:
@@ -72,7 +82,8 @@ If degree(u) > 0:
 Else u is a sink:
 <u_blockID: u_NodeID /t u_PR /t u_nodeID+u_blockID /t 0>
 (*Denote a sink by setting its degree to 0)
-3.2 Map
+
+##### 3.2 Map
 Load information from the last MapReduce pass: (*The first pass will load from the preprocessed file)
 < u_ndoeID+u_blockID /t u_PR /t LIST(v_nodeID+v_blockID) > (*u is the srcNode and v is the dstNode: u->v)
 There are three kinds of information we need to pass:
@@ -85,7 +96,8 @@ Else u is a sink:
 <u_blockID: u_NodeID /t u_PR /t u_nodeID+u_blockID /t 0>
 (*Denote a sink by setting its degree to 0)
 We use this info to calculate the new pagerank value for each node in reducer.
-3.3 Reduce
+
+##### 3.3 Reduce
 In reduce section, we firstly collect information from the brand node, reduce and then do the computation based on the information mapper passed. We also need to use Hadoop counters to store the sum of the residual errors, sum of the number of iterations and the pr value of the highest numbered node in each block.
 Since each block can have many nodes, we need created several maps as below to keep track the related information we need:
 HashMap<String, Double> oldPR : <u_nodeID, u_pr> for nodes u in block B (store old pagerank value).
@@ -115,7 +127,8 @@ for ( v in B ) {
 localResidualError += |NPR[v]-PR[v]| / NPR[v] PR[v] = NPR[v] ;
 }
 Repeat the iteration until the localResidualError < 0.001 * PR.size(), that means the avg residual error in this block is smaller than 0.001. Use an int type numIter to record the total number of iteration of this block.
-3.4 Result
+
+##### 3.4 Result
 MapReduce Pass 0:
 Average number of iterations per Block: 18 Global Average Residual Error: 2.815 MapReduce Pass 1:
 Average number of iterations per Block: 7 Global Average Residual Error: 0.03800 MapReduce Pass 2:
@@ -133,7 +146,7 @@ The page rank of highest numbered Node in Block 60 is 6.176e-07 The page rank of
 Jacobi PageRank Computation takes 6 passes (38 iterations per block) to converge.
 
 #### 4. Extra Credit
-4.1 Gauss-Seidel Iteration
+##### 4.1 Gauss-Seidel Iteration
 The Gauss-Seidel Iteration method uses the most recent pagerank values wherever possible to improve convergence rate. According to the following equation:
 The only difference between Gauss Iteration and Blocked Iteration is the following implementation:
 double u_pr = (NPR.get(u_nodeID) > 0) ? NPR.get(u_nodeID) : PR.get(u_nodeID); This code will get the most recent pagerank values wherever possible.
@@ -196,7 +209,8 @@ Comparison: Jacobi vs. Gauss-Seidel:
 ￼￼￼￼￼￼￼￼￼￼￼￼￼￼1
 ￼￼￼￼￼￼￼￼￼￼￼￼0.0006046
 ￼￼￼￼The two versions take the similar mapreduce passes to converge to the same rate. But since Gauss-Seidel uses the new pagerank value as soon as possible, it needs less average number of iterations (30) per block than Jacobi, thus helping to converge faster than Jacobi.
-4.2 Random Block Partition
+
+##### 4.2 Random Block Partition
 Random Hash Function:
 Hash(nodeID) = (nodeID+random)%68
 The following results shows that it takes 21 mapreduce passes(44 iterations per block) to converge.
