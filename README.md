@@ -1,6 +1,6 @@
 CS5300proj
 ==========
-<***For the best format of the report and the result analysis, please see raw of [THIS](https://github.com/kidchen/CS5300proj/blob/master/README.pdf)!***
+> ***For the best format of the report and the result analysis, please see raw of [THIS](https://github.com/kidchen/CS5300proj/blob/master/README.pdf)!***
 
 #####￼Cornell University
 ###### CS5300 - SP14
@@ -43,59 +43,73 @@ Use Hadoop counter to calculate the residual error of each pass.
 ##### 2.3 Map
 Mapper basically does the pass tasks. Load information from the last MapReduce pass. (*The first pass will load from the preprocessed file)
 <srcNodeID /t PR /t dstNodeIDLIST> There are three kinds of information we need to pass:
+
 1. <srcNodeID: list:dstNodeIDLIST>
 2. <srcNodeID: pr:PR>
-*Use those two remember the old pagerank value and list of dstNodes.
+Use those two remember the old pagerank value and list of dstNodes.
 3. <dstNodeID: PR(srcNode)/degree(srcNode)> (if not a sink)
-*Use this infomation to caculate the new pagerank value for each node in the reducer.
+
+Use this infomation to caculate the new pagerank value for each node in the reducer.
 
 ##### 2.4 Reduce
 Collect information from the branch node and reduce then do the computation based on information mapper passed.
 There are three kinds of information we received:
+
 1. <srcNodeID: pr:PR> --store to oldPageRank
-2. <srcNodeID: list:dstNodeIDLIST> --store to dstNodeIDList 3. <dstNodeID: PR(srcNode)/degree(srcNode)> (if not a sink)
+2. <srcNodeID: list:dstNodeIDLIST> --store to dstNodeIDList 
+3. <dstNodeID: PR(srcNode)/degree(srcNode)> (if not a sink)
+
 For each coming edge from the srcNode:
 pageRankSum += prevPageRank / srcDegree
 <dstNodeID: PR(srcNode)/degree(srcNode)>
 newPageRank = d * pageRankSum + (1 - d) Here d is the damping factor (d=0.85).
-(*Not divided by N because the pagerank value of preprocess file is not divided by N, so the value here is actually amplified)
+(Not divided by N because the pagerank value of preprocess file is not divided by N, so the value here is actually amplified)
 
 ##### 2.5 Calculate the Residual
 At the same time, reducer will calculate the residual error of this node and add it to counter (Hadoop counter).
-ResidualError = (newPageRank-oldPageRank)/newPageRank
-*We need to amplify this by 10^6 to convert to long before we add it to counter. PageRank Value gets updated every time a collection of key-value pair passes the reducer, and a new residual error will be calculated for this node. After all pairs are done, we can calculate the average residual error of this Pass:
-Avg Residual Error= Sum of Residual Error/ total # of Nodes. After computation, output the updated information to master node using the newPageValue it calculated and the dstNodeIDList mapper passes:
+
+> ResidualError = (newPageRank-oldPageRank)/newPageRank
+
+We need to amplify this by 10^6 to convert to long before we add it to counter. PageRank Value gets updated every time a collection of key-value pair passes the reducer, and a new residual error will be calculated for this node. After all pairs are done, we can calculate the average residual error of this Pass:
+
+> Avg Residual Error= Sum of Residual Error/ total # of Nodes. 
+
+After computation, output the updated information to master node using the newPageValue it calculated and the dstNodeIDList mapper passes:
 
 ##### 2.6 Result
-<srcNodeID /t PR /t dstNodeIDLIST>
-Average Residual Value: 2.3388981179020183 Average Residual Value: 0.3229210087269968 Average Residual Value: 0.19205631760138933 Average Residual Value: 0.094025042292369 Average Residual Value: 0.06280159072136364
 It demonstrates the slow convergence. We found it actually converging but the residual error is still too far from 0.001 after 5 MapReduce Passes.
 
 #### 3. Blocked Computation of PageRank
 ##### 3.1 Data Format
 Mapper Input/ Reducer Output Format:
 < u_ndoeID+u_blockID /t u_PR /t LIST(v_nodeID+v_blockID) >
-(*u is the srcNode and v is the dstNode: u->v) Mapper Output/ Reducer Input Format:
-<u_blockID: list:u_nodeID /t LIST(v_nodeID+v_blockID)> <u_blockID: pr:u_nodeID /t u_PR>
+
+(u is the srcNode and v is the dstNode: u->v) 
+
+Mapper Output/ Reducer Input Format:
+<u_blockID: list:u_nodeID /t LIST(v_nodeID+v_blockID)> 
+<u_blockID: pr:u_nodeID /t u_PR>
+
 If degree(u) > 0:
 <v_blockID: v_NodeID /t u_PR /t u_nodeID+u_blockID /t u_degree>
+
 Else u is a sink:
 <u_blockID: u_NodeID /t u_PR /t u_nodeID+u_blockID /t 0>
-(*Denote a sink by setting its degree to 0)
+(Denote a sink by setting its degree to 0)
 
 ##### 3.2 Map
-Load information from the last MapReduce pass: (*The first pass will load from the preprocessed file)
-< u_ndoeID+u_blockID /t u_PR /t LIST(v_nodeID+v_blockID) > (*u is the srcNode and v is the dstNode: u->v)
+Load information from the last MapReduce pass: (The first pass will load from the preprocessed file)
+< u_ndoeID+u_blockID /t u_PR /t LIST(v_nodeID+v_blockID) > (u is the srcNode and v is the dstNode: u->v)
 There are three kinds of information we need to pass:
 
 1. <u_blockID: list:u_nodeID /t LIST(v_nodeID+v_blockID)>
 2. <u_blockID: pr:u_nodeID /t u_PR>
-*Use those two remember the old pagerank value and information of list of dstNodes
+Use those two remember the old pagerank value and information of list of dstNodes
 3. If degree(u) > 0:
 <v_blockID: v_NodeID /t u_PR /t u_nodeID+u_blockID /t u_degree>
 Else u is a sink:
 <u_blockID: u_NodeID /t u_PR /t u_nodeID+u_blockID /t 0>
-(*Denote a sink by setting its degree to 0)
+(Denote a sink by setting its degree to 0)
 
 We use this info to calculate the new pagerank value for each node in reducer.
 
@@ -166,17 +180,28 @@ The results shows that it takes 21 mapreduce passes(44 iterations per block) to 
 
 #### 5. Running our Code
 We have made our own pre-filtered input files, customized for the netid cz294.
+
 **Step 0**: Upload our pre-filtered input files to s3 bucket. You might want to create a new folder such as “data”, and store all the input files in that folder.
+
 **Step 1**: Upload custom JAR files to s3 bucket.
+
 **Step 2**: Create a cluster called “pageRank”, store the log files to a folder such as “s3n://bucket-name/log/”.
+
 **Step 3**: You can start a master instance and 10 core instances.
+
 **Step 4**: Add step “Custom JAR”. For example: Name: SimplePageRank
+
 JAR S3 location: s3n://bucket-name/SimplePageRank.jar Arguments: s3n://bucket-name/folder-name/singlenode_edge
 s3n://bucket-name/folder-name
+
 In the “Arguments” field above, the first line is the path of the input file, the
-second line is the output path. Note that we have appended “/pass0”, “/pass1”... to the output path in our code. For the example above, the real output path will be
-s3n://bucket-name/folder-name/pass0, s3n://bucket-name/folder-name/pass1,
+second line is the output path. Note that we have appended “/pass0”, “/pass1”... to the output path in our code. 
+For the example above, the real output path will be
+
+> s3n://bucket-name/folder-name/pass0, s3n://bucket-name/folder-name/pass1,
 ...
+
 As a result, for the output argument, please end the argument with the folder-name only,
 without any other special characters like ‘/’. Otherwise, it will fail to create the output folder.
-Step 5: Create the cluster and run the program. You should see appropriate information in stdout and log files.
+
+**Step 5**: Create the cluster and run the program. You should see appropriate information in stdout and log files.
