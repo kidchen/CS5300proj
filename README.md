@@ -14,13 +14,13 @@ CS5300proj
 
 #### 1. Input Data Preprocess
 ##### 1.1 Filter Parameter:
-- Reject edges are based on netID: cz294 - rejectMin: 0.99*0.492 (0.48708)
-- rejectLimit: 0.99*0.492+0.01 (0.49708)
+- Reject edges are based on netID: cz294 /- rejectMin: 0.99 /* 0.492 (0.48708)
+- rejectLimit: 0.99 /* 0.492 /+ 0.01 (0.49708)
 ##### ￼1.2 Data Format: SimpleNode:
 BlockNode:
 > src_node /t pagerank /t LIST(des_node)
 > src_node+src_block /t pagerank /t LIST(des_node+des_block)
-*/* Note that the pagerank we put here is 1.0, is amplified by N(total # of nodes) so in the reducer, we calculate the new pagerank value by (1-d)+d/*incoming_PR_sum, also amplified by N(total # of nodes).*
+/* Note that the pagerank we put here is 1.0, is amplified by N(total # of nodes) so in the reducer, we calculate the new pagerank value by (1 /- d) /+ d /* incoming/_PR/_sum, also amplified by N(total # of nodes).
 
 
 #### 2. Simple Computation of PageRank
