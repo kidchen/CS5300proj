@@ -1,29 +1,29 @@
 CS5300proj
 ==========
-￼￼￼￼Cornell University
-￼￼￼￼￼￼￼CS5300 - SP14
-￼￼￼Fast Convergence PageRank in Hadoop Report
-Yun Hao (yh539), Yang Yang (yy565), Chen Zhang (cz294)
+##### ￼￼￼￼Cornell University
+###### ￼￼￼￼￼￼￼CS5300 - SP14
+### ￼￼￼Fast Convergence PageRank in Hadoop Report
+##### Yun Hao (yh539), Yang Yang (yy565), Chen Zhang (cz294)
 
-0. Overall Structures
-1. Preprocess the data: before MapReduce, we need to use our netID to create our own input edge files for each different implementation.
-2. PageRank: this is the main part of the project. It starts a MapReduce job for each pass. These MapReduce jobs will then call the Map function and Reduce function.
-3. Map: Map function will parse the input data and transfer the output to Reduce.
-4. Reduce: Reduce function will calculate the new PageRank value and other information (i.e. highest rank node in each block) and produce output to Map for next pass.
-5. PRCounter: This is a Hadoop counter. It will transfer the results from Reduce to our main part PageRank. In block implementation, we also create blockCounter in each block so that we can get the highest rank node in each block.
+#### 0. Overall Structures
+1. **Preprocess the data**: before MapReduce, we need to use our netID to create our own input edge files for each different implementation.
+2. **PageRank**: this is the main part of the project. It starts a MapReduce job for each pass. These MapReduce jobs will then call the Map function and Reduce function.
+3. **Map**: Map function will parse the input data and transfer the output to Reduce.
+4. **Reduce**: Reduce function will calculate the new PageRank value and other information (i.e. highest rank node in each block) and produce output to Map for next pass.
+5. **PRCounter**: This is a Hadoop counter. It will transfer the results from Reduce to our main part PageRank. In block implementation, we also create blockCounter in each block so that we can get the highest rank node in each block.
 
-1. Input Data Preprocess
-1.1 Filter Parameter:
+#### 1. Input Data Preprocess
+##### 1.1 Filter Parameter:
 - Reject edges are based on netID: cz294 - rejectMin: 0.99*0.492 (0.48708)
 - rejectLimit: 0.99*0.492+0.01 (0.49708)
-￼1.2 Data Format: SimpleNode:
+##### ￼1.2 Data Format: SimpleNode:
 BlockNode:
-src_node /t pagerank /t LIST(des_node)
-src_node+src_block /t pagerank /t LIST(des_node+des_block)
-* Note that the pagerank we put here is 1.0, is amplified by N(total # of nodes) so in the reducer, we calculate the new pagerank value by (1-d)+d*incoming_PR_sum, also amplified by N(total # of nodes).
+> src_node /t pagerank /t LIST(des_node)
+> src_node+src_block /t pagerank /t LIST(des_node+des_block)
+*/* Note that the pagerank we put here is 1.0, is amplified by N(total # of nodes) so in the reducer, we calculate the new pagerank value by (1-d)+d/*incoming_PR_sum, also amplified by N(total # of nodes).*
 
 
-2. Simple Computation of PageRank
+#### 2. Simple Computation of PageRank
 2.1 MapReduce Task
 Mapper get information from master node, separate sub-divided problems and pass them to each branch node.
 Reducer collect the information from each branch node and updates the PR value for the node based on the PR values of its neighbor nodes, and finally pass the updated information back to the master node.
@@ -61,7 +61,7 @@ Avg Residual Error= Sum of Residual Error/ total # of Nodes. After computation, 
 Average Residual Value: 2.3388981179020183 Average Residual Value: 0.3229210087269968 Average Residual Value: 0.19205631760138933 Average Residual Value: 0.094025042292369 Average Residual Value: 0.06280159072136364
 It demonstrates the slow convergence. We found it actually converging but the residual error is still too far from 0.001 after 5 MapReduce Passes.
 
-3. Blocked Computation of PageRank
+#### 3. Blocked Computation of PageRank
 3.1 Data Format
 Mapper Input/ Reducer Output Format:
 < u_ndoeID+u_blockID /t u_PR /t LIST(v_nodeID+v_blockID) >
@@ -132,7 +132,7 @@ The page rank of highest numbered Node in Block 19 is 4.104e-06 The page rank of
 The page rank of highest numbered Node in Block 60 is 6.176e-07 The page rank of highest numbered Node in Block 61 is 1.511e-05 The page rank of highest numbered Node in Block 62 is 1.071e-06 The page rank of highest numbered Node in Block 63 is 3.119e-07 The page rank of highest numbered Node in Block 64 is 2.189e-07 The page rank of highest numbered Node in Block 65 is 9.674e-07 The page rank of highest numbered Node in Block 66 is 1.157e-06 The page rank of highest numbered Node in Block 67 is 3.566e-07
 Jacobi PageRank Computation takes 6 passes (38 iterations per block) to converge.
 
-4. Extra Credit
+#### 4. Extra Credit
 4.1 Gauss-Seidel Iteration
 The Gauss-Seidel Iteration method uses the most recent pagerank values wherever possible to improve convergence rate. According to the following equation:
 The only difference between Gauss Iteration and Blocked Iteration is the following implementation:
@@ -256,7 +256,7 @@ Jacobi Random
 Pass
 Residual
 
-5. Running our Code
+#### 5. Running our Code
 We have made our own pre-filtered input files, customized for the netid cz294.
 Step 0: Upload our pre-filtered input files to s3 bucket. You might want to create a new folder such as “data”, and store all the input files in that folder.
 Step 1: Upload custom JAR files to s3 bucket.
